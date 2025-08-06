@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// in here we are defining the schema of how our tour schema would look like
+// note our tour is a collection, the individual data we have there is a document
 const toursSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -50,10 +52,14 @@ const toursSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now(),
+    select: false,
   },
   startDates: [Date],
 });
 
+// then we define our tour model, which helps
+// us to interact with our database collections
+// this model also gives us the ability to execute mongoose commands
 const Tour = mongoose.model('Tour', toursSchema);
 
 module.exports = Tour;

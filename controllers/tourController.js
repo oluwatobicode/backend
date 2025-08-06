@@ -14,7 +14,7 @@ exports.getAllTours = async (req, res) => {
     Object.entries(queryObj).forEach(([key, value]) => {
       // tries to match keys on the format of 'field[operator]' e.g 'duration[gte]'
       const match = key.match(/(\w+)\[(gte|gt|lte|lt)\]/);
-      // coditional to check if there is a match
+      // conditional to check if there is a match
       if (match) {
         // extracts the field name e.g duartion
         const field = match[1]; // e.g., 'duration'
@@ -41,13 +41,42 @@ exports.getAllTours = async (req, res) => {
     if (req.query.sort) {
       // sort('price ratingsAverage')
       // we will add it to the url like this sort=price,ratingsAverage
-      const sortBy = req.query.sort.split(', ').join(' ');
+      const sortBy = req.query.sort.split(',').join(' ');
       console.log(sortBy);
       query = query.sort(sortBy);
     } else {
       // a default one
-      query = query.sort('-createdAt');
+      query = query.sort('-createdAt _id');
     }
+
+    // 3) Field limiting
+    if (req.query.fields) {
+      const fields = req.query.fields.split(',').join(' ');
+      query = query.select('name duration price'); // this is called projecting
+      query = query.select(fields);
+    } else {
+      query = query.select('-___v'); //this will not include the __v that mongodb gives us
+    }
+
+    // 4) PAGINATION
+    // - get the page and the limit from query string
+    const page = Number(req.query.page) || 1; // converting a string to number abd by default we wannt it to be 1
+    const limit = Number(req.query.limit) || 10;
+
+    const skip = (page - 1) * limit;
+
+    // - define default values cause we need to have pagination be default (page=1, limit=100)
+    // page=2&limit=10 1-10, 1-10, page 1, 11-20, page 2, 21-30, page 3
+    query = query.skip(skip).limit(limit);
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+
+      if (skip > numTours) throw new Error('');
+    }
+
+    // but we need to actually
+
     // execute the query here
     const tours = await query;
 
