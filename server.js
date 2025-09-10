@@ -5,6 +5,16 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './config.env' }); // this is a way of getting the path of our env file
 const app = require('./app');
 
+process.on('uncaughtException', (err) => {
+  console.log('UNHANDLED EXCEPTION! Shutting down...');
+  console.log(err.name, err.message);
+
+  process.exit(1);
+
+  // 0 - success
+  // 1- uncalled
+});
+
 // this is our database setup
 const DB = process.env.DATABASE.replace(
   '<db_password>',
@@ -15,9 +25,17 @@ const DB = process.env.DATABASE.replace(
 mongoose
   .connect(DB)
   .then(() => console.log('connection to the DB is successful!'));
-
-// we defined a port in our env file we are either using it or we are running on port 3000
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`App running on port ${port}`);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.log('UNHANDLED REJECTION! Shutting down...');
+  console.log(err.name, err.message);
+  server.close(() => {
+    process.exit(1);
+  });
+  // 0 - success
+  // 1- uncalled
 });
