@@ -1,7 +1,14 @@
 const express = require('express');
 const userController = require('../controllers/userController');
+const authController = require('../controllers/authController');
 
 const router = express.Router();
+
+// this is are routes for authentication
+router.post('/signup', authController.signup);
+router.post('/login', authController.login);
+
+// this follows the rest philosophy
 router
   .route('/')
   .get(userController.getAllUsers)
