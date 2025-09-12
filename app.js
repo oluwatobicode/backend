@@ -28,6 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 // this is a way of using app.use() to add a specific middleware function like the request time of each api request below
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
+
   next();
 });
 
