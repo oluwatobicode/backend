@@ -1,9 +1,6 @@
 // note our server.js is our entry point
-
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-dotenv.config({ path: './config.env' }); // this is a way of getting the path of our env file
-const app = require('./app');
 
 process.on('uncaughtException', (err) => {
   console.log('UNHANDLED EXCEPTION! Shutting down...');
@@ -14,6 +11,9 @@ process.on('uncaughtException', (err) => {
   // 0 - success
   // 1- uncalled
 });
+
+dotenv.config({ path: './config.env' }); // this is a way of getting the path of our env file
+const app = require('./app');
 
 // this is our database setup
 const DB = process.env.DATABASE.replace(
