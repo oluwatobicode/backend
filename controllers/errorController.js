@@ -26,14 +26,14 @@ const sendErrorDev = (err, res) => {
 };
 
 const sendErrorProd = (err, res) => {
-  // Operational, trusted error: send message to client
+  // Operational, trusted error: it sends message to client
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
     });
   } else {
-    // Programming or other unknown error: don't leak error details
+    // Programming or other unknown error: don't leak error detail // it sends message to developers
     console.error('ERROR 💥', err);
     res.status(500).json({
       status: 'error',
@@ -41,6 +41,10 @@ const sendErrorProd = (err, res) => {
     });
   }
 };
+
+const handleJWTError = () => new AppError('Invalid token. Log In again', 401);
+
+const handleJWTExpireError = () => new AppError('Your token has expired!', 401);
 
 module.exports = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
@@ -57,6 +61,8 @@ module.exports = (err, req, res, next) => {
     if (error.code === 11000) error = handleDuplicateFieldsDB(error);
     if (error.name === 'ValidationError')
       error = handleValidationErrorDB(error);
+    if (error.name === 'JsonWebToken') error = handleJWTError();
+    if (error.name === 'TokenExpiredError') error = handleJWTExpireError();
 
     sendErrorProd(error, res);
   }
