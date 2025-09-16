@@ -44,6 +44,11 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
 });
 
 userSchema.pre('save', async function (next) {
@@ -56,9 +61,16 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
+userSchema.pre(/^find/, function (next) {
+  // this points to the current query
+  this.find({ active: { $ne: false } });
+
+  next();
+});
+
 userSchema.pre('save', function (next) {
   // if we do not modify our password or the document is new then  skip
-  if (!this.isModified('password') || this.isNew) return next();
+  if (!this.isModified('password')) return next();
 
   this.passwordChangedAt = Date.now() - 1000;
   next();
