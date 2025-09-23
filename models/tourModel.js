@@ -123,6 +123,20 @@ toursSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });
 
+// virtual populate
+toursSchema.virtual('reviews', {
+  // in here the name of the model we are referencing
+  ref: 'Review',
+  foreignField: 'tour',
+  localField: '_id',
+  // and next we need to specify the name of the fields in order to connect the two data sets.
+  // which are the foreign field and the local field
+  // the foreign field is the name if the field in the other model so in the review model in this case, where the
+  // reference to the current model is stored.
+  // next we need to say wher the id is actually stored here in this current tour model
+  // so local field and that is the ID, so ._ID which is how it's called in the local model
+});
+
 // document middleware: runs before .save() and .create() but on .insertMany()
 // the this will point to the currenltly saved document , we are going to create a slug for each of the document
 toursSchema.pre('save', function (next) {
@@ -172,11 +186,11 @@ toursSchema.pre(/^find/, function (next) {
   next();
 });
 
-toursSchema.pre(/^find/, function (next){
+toursSchema.pre(/^find/, function (next) {
   this.populate({
-    path:'guides',
-    select:'-__v -passwordChangedAt'
-  })
+    path: 'guides',
+    select: '-__v -passwordChangedAt',
+  });
 
   next();
 });
@@ -186,8 +200,6 @@ toursSchema.post(/^find/, function (docs, next) {
   // console.log(docs);
   next();
 });
-
-
 
 // aggregation middleware
 // the this will point to the current aggregation
