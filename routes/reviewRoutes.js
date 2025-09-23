@@ -8,11 +8,18 @@ const router = express.Router({
 
 router
   .route('/')
-  .post(reviewController.createReview)
-  .get(
+  .post(
     authController.protect,
     authController.restrictTo('user'),
-    reviewController.getAllReviews
-  );
+    reviewController.setTourUserIds,
+    reviewController.createReview
+  )
+  .get(reviewController.getAllReviews);
+
+router
+  .route('/:id')
+  .get(reviewController.getReview)
+  .patch(reviewController.updateReview)
+  .delete(reviewController.deleteReview);
 
 module.exports = router;
