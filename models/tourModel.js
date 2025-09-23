@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
-const validator = require('validator');
 
 // in here we are defining the schema of how our tour schema would look like
 // note our tour is a collection, the individual data we have there is a document
@@ -84,6 +83,34 @@ const toursSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // geoSPatial Data
+    startLocation: {
+      // gerJson
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number],
+    },
+
+    // Locations embedding them here
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point'],
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number,
+      },
+    ],
+
+    guides: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
   },
   {
     toJSON: { virtuals: true },
@@ -102,6 +129,15 @@ toursSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true });
   next();
 });
+
+// RESPONSIBLE FOR EMBEDDING IN OUR SCHEMA IT WOULD LOOK LIKE THIS guides:Array
+// toursSchema.pre('save', async function (next) {
+//   const guidesPromise = this.guides.map(async (id) => await User.findById(id));
+
+//   this.guides = await Promise.all(guidesPromise);
+
+//   next();
+// });
 
 // toursSchema.pre('save', function (next) {
 //   console.log('will save document');
@@ -136,11 +172,22 @@ toursSchema.pre(/^find/, function (next) {
   next();
 });
 
+toursSchema.pre(/^find/, function (next){
+  this.populate({
+    path:'guides',
+    select:'-__v -passwordChangedAt'
+  })
+
+  next();
+});
+
 toursSchema.post(/^find/, function (docs, next) {
   console.log(`Query took ${Date.now() - this.start} milliseconds`);
   // console.log(docs);
   next();
 });
+
+
 
 // aggregation middleware
 // the this will point to the current aggregation
