@@ -112,12 +112,15 @@ const toursSchema = new mongoose.Schema(
 
     guides: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
   },
+
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
 );
 
+toursSchema.index({ price: 1, ratingsAverage: -1 });
+toursSchema.index({ slug: 1 });
 // virtual property
 toursSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;

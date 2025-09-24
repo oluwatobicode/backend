@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Tour = require('./tourModel');
 
 const reviewSchema = new mongoose.Schema(
   {
@@ -19,11 +20,12 @@ const reviewSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.ObjectId,
       ref: 'User',
+      required: [true, 'Review must belong to a user'],
     },
-
     tour: {
       type: mongoose.Schema.ObjectId,
       ref: 'Tour',
+      required: [true, 'Review must belong to a tour'],
     },
   },
   {
@@ -32,24 +34,80 @@ const reviewSchema = new mongoose.Schema(
   }
 );
 
-reviewSchema.pre(/^find/, function (next) {
-  // this.populate({
-  //   path: 'tour',
-  //   select: 'name',
-  // }).populate({
-  //   path: 'user',
-  //   select: 'name photo',
-  // });
+reviewSchema.index({ tour: 1, user: 1 }, { unique: true });
 
+reviewSchema.pre(/^find/, function (next) {
   this.populate({
     path: 'user',
     select: 'name photo',
   });
-
   next();
+});
+
+reviewSchema.statics.calcAverageRatings = async function (tourId) {
+  try {
+    console.log('Calculating ratings for tour:', tourId);
+
+    const stats = await this.aggregate([
+      {
+        $match: { tour: tourId },
+      },
+      {
+        $group: {
+          _id: '$tour',
+          nRating: { $sum: 1 },
+          avgRating: { $avg: '$rating' },
+        },
+      },
+    ]);
+
+    console.log('Rating stats:', stats);
+
+    if (stats.length > 0) {
+      await Tour.findByIdAndUpdate(tourId, {
+        ratingsQuantity: stats[0].nRating,
+        ratingsAverage: stats[0].avgRating,
+      });
+    } else {
+      await Tour.findByIdAndUpdate(tourId, {
+        ratingsQuantity: 0,
+        ratingsAverage: 4.5,
+      });
+    }
+  } catch (error) {
+    // console.error('Error calculating average ratings:', error);
+    throw error;
+  }
+};
+
+// For new reviews (create)
+reviewSchema.post('save', function () {
+  // this points to the current review document
+  this.constructor.calcAverageRatings(this.tour);
+});
+
+// For updates and deletes - store original document in pre hook
+reviewSchema.pre(/^findOneAnd/, async function (next) {
+  try {
+    this.r = await this.clone().findOne();
+    // console.log('Original review document:', this.r);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// For updates and deletes - recalculate ratings in post hook
+reviewSchema.post(/^findOneAnd/, async function () {
+  try {
+    // Only proceed if we found a document to update/delete
+    if (this.r) {
+      await this.r.constructor.calcAverageRatings(this.r.tour);
+    }
+  } catch (error) {
+    console.error('Error in post findOneAnd hook:', error);
+  }
 });
 
 const Review = mongoose.model('Review', reviewSchema);
 module.exports = Review;
-
-// POST /tour/{tour-id}/reviews - like this we can create a review
