@@ -11,26 +11,34 @@ router.post('/login', authController.login);
 // these routes are for forgot password
 router.post('/forgotPassword', authController.forgotPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);
+
+// protect all routes after the middlware
+router.use(authController.protect);
+
 router.patch(
   '/updatePassword',
-  authController.protect,
+
   authController.updatePassword
 );
 
 router.get(
   '/me',
-  authController.protect,
+
   userController.getMe,
   userController.getUser
 );
-router.patch('/updateMe', authController.protect, userController.updateMe);
-router.delete('/deleteMe', authController.protect, userController.deleteMe);
+router.patch('/updateMe', userController.updateMe);
+router.delete('/deleteMe', userController.deleteMe);
 
 // this follows the rest philosophy
+
+router.use(authController.restrictTo('admin'));
+
 router
   .route('/')
   .get(userController.getAllUsers)
   .post(userController.createUser);
+
 router
   .route('/:id')
   .get(userController.getUser)

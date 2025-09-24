@@ -3,6 +3,8 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const Tour = require('../../models/tourModel'); // Fixed relative path
+const Review = require('../../models/reviewModel');
+const User = require('../../models/userModel');
 
 dotenv.config({ path: './config.env' });
 
@@ -19,11 +21,19 @@ mongoose
 const tours = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'tours.json'), 'utf-8')
 );
+const users = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'users.json'), 'utf-8')
+);
+const reviews = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'reviews.json'), 'utf-8')
+);
 
 // Import data into db
 const importData = async () => {
   try {
     await Tour.create(tours);
+    await User.create(users, { validateBeforeSave: false });
+    await Review.create(reviews);
     console.log('Data successfully loaded');
   } catch (error) {
     console.log(error); // Fixed variable name
@@ -35,6 +45,8 @@ const importData = async () => {
 const deleteData = async () => {
   try {
     await Tour.deleteMany();
+    await User.deleteMany();
+    await Review.deleteMany();
     console.log('Data successfully deleted');
   } catch (error) {
     console.log(error); // Fixed variable name
