@@ -39,6 +39,7 @@ const toursSchema = new mongoose.Schema(
       default: 4.5,
       min: [1, 'Rating must be above 1.0'],
       max: [5, 'Rating must be below 5.0'],
+      set: (val) => Math.round(val * 10) / 10, // this would help in rounding things into like 4.666 to 4.7
     },
     ratingsQuantity: {
       type: Number,
@@ -121,6 +122,13 @@ const toursSchema = new mongoose.Schema(
 
 toursSchema.index({ price: 1, ratingsAverage: -1 });
 toursSchema.index({ slug: 1 });
+
+/* IN THIS SCENAIRO WE ARE NOT GOING TO PASS 1 AS AN INDEX BUT A 2D SPHERE INDEX IF THE DATA DESCRIBES REAL POINTS
+IF THE DATA DESCRIBES REAL POINTS ON THE EARTH LIKE SPHERE OR INSTEAD WE CAN ALSO USE A 2D INDEX IF WE'RE USING
+JUST FICTIONAL POINTS ON A SIMPLE TWO DIMESIONAL PLANE
+*/
+toursSchema.index({ startLocation: '2dsphere' });
+
 // virtual property
 toursSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
@@ -201,14 +209,6 @@ toursSchema.pre(/^find/, function (next) {
 toursSchema.post(/^find/, function (docs, next) {
   console.log(`Query took ${Date.now() - this.start} milliseconds`);
   // console.log(docs);
-  next();
-});
-
-// aggregation middleware
-// the this will point to the current aggregation
-toursSchema.pre('aggregate', function (next) {
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-  // console.log(this.pipeline());
   next();
 });
 

@@ -32,6 +32,20 @@ router
     tourController.getMonthlyPlan
   );
 
+// we do not need need the distance paramter as we had it right here,
+/* 
+because we are not going to be searching for a certain radius ,
+we are really going to calucate the distance from all a certain point to all the tours
+that we have in our collection.
+*/
+router.route('/distance/:latlng/unit/:unit').get(tourController.getDistance);
+
+router
+  .route('/tours-within/:distance/center/:latlng/unit/:unit')
+  .get(tourController.getToursWithin);
+// it would look like this when calling:
+// /tours-distance/233/center/-40,45/unit/mi
+
 router
   .route('/')
   .get(tourController.getAllTours)
