@@ -26,7 +26,34 @@ app.use(express.static(path.join(__dirname, 'public')));
 // GLOBAL MIDDLEWARES
 
 // set security http
-app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        'https://api.mapbox.com',
+        'https://cdnjs.cloudflare.com',
+      ],
+      styleSrc: [
+        "'self'",
+        'https://api.mapbox.com',
+        'https://fonts.googleapis.com',
+        "'unsafe-inline'",
+      ],
+      workerSrc: ["'self'", 'blob:', 'https://api.mapbox.com'],
+      childSrc: ["'self'", 'blob:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://api.mapbox.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      connectSrc: [
+        "'self'",
+        'https://api.mapbox.com',
+        'https://*.tiles.mapbox.com',
+        'https://events.mapbox.com',
+      ],
+    },
+  })
+);
 
 // we can define max number from an ip in a given time
 const limiter = rateLimit({
