@@ -6,6 +6,7 @@ const helmet = require('helmet');
 // const mongoSanitize = require('express-mongo-sanitize');
 // const xss = require('xss-clean');
 const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
 
 const AppError = require('./utils/appError');
 
@@ -26,6 +27,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // GLOBAL MIDDLEWARES
 
 // set security http
+// In app.js, replace the commented helmet section with:
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
@@ -50,6 +52,8 @@ app.use(
         'https://api.mapbox.com',
         'https://*.tiles.mapbox.com',
         'https://events.mapbox.com',
+        'ws://localhost:*', // Add this for development WebSocket (Parcel HMR)
+        'wss://localhost:*', // Add this too for secure WebSocket
       ],
     },
   })
@@ -71,6 +75,10 @@ if (process.env.NODE_ENV === 'development') {
 
 // BODY PARSERS - Parse incoming request bodies FIRST
 app.use(express.json({ limit: '10kb' }));
+
+// cookie-parser
+app.use(cookieParser());
+
 app.use(express.urlencoded({ extended: true }));
 
 // DATA SANITIZATION - Run AFTER body parsing
@@ -96,6 +104,7 @@ app.use(
 // test middleware
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
+  console.log(req.cookies);
   next();
 });
 
