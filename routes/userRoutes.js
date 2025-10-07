@@ -4,35 +4,32 @@ const authController = require('../controllers/authController');
 
 const router = express.Router();
 
-// this is are routes for authentication
+// Authentication routes
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
 router.get('/logout', authController.logout);
 
-// these routes are for forgot password
+// Password reset routes
 router.post('/forgotPassword', authController.forgotPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);
 
-// protect all routes after the middlware
+// Protect all routes after this middleware
 router.use(authController.protect);
 
+// Update password (protected)
+router.patch('/updatePassword', authController.updatePassword);
+
+// User profile routes
+router.get('/me', userController.getMe, userController.getUser);
 router.patch(
-  '/updatePassword',
-
-  authController.updatePassword
+  '/updateMe',
+  userController.uploadUserPhoto,
+  userController.resizeUserPhoto,
+  userController.updateMe
 );
-
-router.get(
-  '/me',
-
-  userController.getMe,
-  userController.getUser
-);
-router.patch('/updateMe', userController.updateMe);
 router.delete('/deleteMe', userController.deleteMe);
 
-// this follows the rest philosophy
-
+// Admin only routes
 router.use(authController.restrictTo('admin'));
 
 router
