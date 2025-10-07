@@ -16,8 +16,11 @@ const cookieOptions = {
   expires: new Date(
     Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
   ),
-  httpOnly: true,
+  httpOnly: true, // this means we cannot manipulate the cookie in anyway
 };
+
+/* what we are going to do is create a simple log-out route and  a new cookie with the exact 
+same name , then that will override the current cookie in the browser but no token , then we will give it a very short period of time */
 
 if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
 
@@ -80,32 +83,47 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 // this will check if the user is currently logged in ornot
-exports.isLoggedIn = catchAsync(async (req, res, next) => {
+exports.isLoggedIn = async (req, res, next) => {
   if (req.cookies.jwt) {
-    // 1) verify token
-    const decoded = await promisify(jwt.verify)(
-      req.cookies.jwt,
-      process.env.JWT_SECRET
-    );
-    console.log(decoded);
-    // 2) check if user still exist.
-    const currentUser = await User.findById(decoded.id);
-    if (!currentUser) {
+    try {
+      // 1) verify token
+      const decoded = await promisify(jwt.verify)(
+        req.cookies.jwt,
+        process.env.JWT_SECRET
+      );
+      console.log(decoded);
+      // 2) check if user still exist.
+      const currentUser = await User.findById(decoded.id);
+      if (!currentUser) {
+        return next();
+      }
+
+      // 3) check if user changed password after the token was issued.
+      if (currentUser.changedPasswordAfter(decoded.iat)) {
+        return next();
+      }
+
+      // THERE IS A LOGGED IN USER
+      res.locals.user = currentUser;
+      return next();
+    } catch (err) {
       return next();
     }
-
-    // 3) check if user changed password after the token was issued.
-    if (currentUser.changedPasswordAfter(decoded.iat)) {
-      return next();
-    }
-
-    // THERE IS A LOGGED IN USER
-    res.locals.user = currentUser;
-    return next();
   }
 
   next();
-});
+};
+
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+
+  res.status(200).json({
+    status: 'success',
+  });
+};
 
 // protecting routes
 exports.protect = catchAsync(async (req, res, next) => {
