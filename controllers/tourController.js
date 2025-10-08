@@ -2,6 +2,79 @@ const Tour = require('../models/tourModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const factory = require('./handlerFactory');
+const multer = require('multer');
+const sharp = require('sharp');
+
+// so we are going to create a multerStorage and a multerFilter, that would help
+// tp create and then upload the file from there,
+
+const multerStorage = multer.memoryStorage(); //THIS WOULD MAKE THE IMAGE BE STORED AS A BUFFER
+
+// this os a multer filyter to check what type of image file was loaded
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Not an image! Please upload only images!'), false);
+  }
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+exports.uploadTourImages = upload.fields([
+  {
+    name: 'imageCover',
+    maxCount: 1,
+  },
+  {
+    name: 'images',
+    maxCount: 3,
+  },
+]);
+
+exports.resizeTourImages = catchAsync(async (req, res, next) => {
+  console.log(req.files);
+
+  if (!req.files.imageCover || !req.files.images) return next();
+
+  // 1) Cover image
+  req.body.imageCover = `tour-${req.params.id}-${Date.now()}--cover.jpg`;
+
+  await sharp(req.files.imageCover[0].buffer) // [0] -> the reason we are targeting the first index is because the image is in an array
+    .resize(2000, 1333)
+    .toFormat('jpeg')
+    .jpeg({
+      quality: 90,
+    })
+    .toFile(`public/img/tours/${req.body.imageCover}`); // we also need to make it possible that our update tour handler then picks up this image cover filename to update it in the current tour document.
+  // to do it we would put the imageCoverFilename into our req.body
+
+  // 2) Images
+  req.body.images = [];
+  await Promise.all(
+    req.files.images.map(async (file, i) => {
+      const filename = `tour-${req.params.id}-${Date.now()}--${i + 1}.jpg`;
+
+      // the reason for the filename is that we can use it to push some images into
+      // req.body.images and so that is the exact same logic, as we had on the req.body.imageCover
+      // but in our case req.body.image is an array.
+
+      await sharp(file.buffer) // this would be file.buffer
+        .resize(2000, 1333)
+        .toFormat('jpeg')
+        .jpeg({
+          quality: 90,
+        })
+        .toFile(`public/img/tours/${filename}`);
+
+      req.body.images.push(filename);
+    })
+  );
+  next();
+});
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.sort = '-ratingsAverage,price';
